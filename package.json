@@ -2,6 +2,20 @@
   "name": "ig-followers",
   "version": "0.1.0",
   "private": true,
+  "description": "Compará quién seguís y quién te sigue en Instagram a partir de la exportación oficial de tus datos. Todo se procesa local en tu navegador — nada se sube a un servidor.",
+  "license": "MIT",
+  "author": "Renzo Muzi",
+  "keywords": [
+    "instagram",
+    "non-followers",
+    "followers",
+    "nextjs",
+    "client-side",
+    "privacy-first"
+  ],
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
