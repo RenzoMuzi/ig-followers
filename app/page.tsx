@@ -97,8 +97,8 @@ export default function Home() {
   const showUpload = wantsUpload || !parsed;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <main className="mx-auto max-w-3xl px-3 py-6 sm:px-4 sm:py-10">
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div>
           <h1 className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-3xl font-bold text-transparent">
             IG Non-Followers
@@ -107,7 +107,7 @@ export default function Home() {
             Descubrí quién no te sigue de vuelta usando la exportación de datos de Instagram.
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           {parsed &&
             (showUpload ? (
               <button
@@ -135,22 +135,44 @@ export default function Home() {
             <summary className="cursor-pointer font-medium text-white">
               ¿Cómo descargo mis datos de Instagram?
             </summary>
-            <ol className="mt-3 list-decimal space-y-1 pl-5">
-              <li>Abrí Instagram → Configuración.</li>
-              <li>Centro de cuentas → Tu información y permisos → Descargar tu información.</li>
-              <li>Elegí solo tu cuenta → en "Tipo de información" tildá Seguidores y seguidos.</li>
+
+            <div className="mt-3 rounded-lg border border-pink-500/30 bg-pink-500/5 p-3">
+              <p className="text-xs uppercase tracking-wide text-pink-400">Atajo</p>
+              <p className="mt-1">Andá directo al Centro de cuentas con tu cuenta logueada:</p>
+              <a
+                href="https://accountscenter.instagram.com/info_and_permissions/dyi/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 block break-all rounded-md bg-neutral-900/60 px-2.5 py-1.5 font-mono text-xs text-pink-400 underline hover:text-pink-300 sm:text-sm"
+              >
+                accountscenter.instagram.com/info_and_permissions/dyi/
+              </a>
+              <p className="mt-2 text-xs text-neutral-400">Y saltá al paso 2 de abajo.</p>
+            </div>
+
+            <p className="mt-4 text-xs uppercase tracking-wide text-neutral-500">
+              O paso a paso desde Instagram:
+            </p>
+            <ol className="mt-2 list-decimal space-y-1 pl-5">
+              <li>
+                Instagram → Configuración → Centro de cuentas → Tu información y permisos →
+                Descargar tu información.
+              </li>
+              <li>
+                Elegí solo tu cuenta → en "Tipo de información" tildá{" "}
+                <span className="font-semibold">Seguidores y seguidos</span>.
+              </li>
               <li>
                 Formato: <span className="font-mono text-pink-400">JSON</span> · Rango:{" "}
                 <span className="font-semibold">Todo el tiempo</span>.
               </li>
               <li>Solicitá la descarga. Te llega por mail en unos minutos.</li>
               <li>
-                Descargá el ZIP y <span className="font-semibold">extraelo</span>. Adentro vas a
-                encontrar los archivos en{" "}
-                <span className="font-mono text-pink-400">
+                Descargá el ZIP y <span className="font-semibold">extraelo</span>. Adentro, los
+                archivos están en:
+                <code className="mt-1 block break-all rounded-md bg-neutral-900/60 px-2.5 py-1.5 font-mono text-xs text-pink-400">
                   connections/followers_and_following/
-                </span>
-                .
+                </code>
               </li>
               <li>
                 Arrastrá <span className="font-mono text-pink-400">following.json</span> y{" "}
@@ -231,15 +253,19 @@ export default function Home() {
             </div>
           )}
 
-          <div className="flex gap-2 border-b border-neutral-800">
+          <div className="-mx-4 flex gap-2 overflow-x-auto border-b border-neutral-800 px-4 sm:mx-0 sm:px-0">
             <TabButton
               active={tab === "not_following_back"}
               onClick={() => setTab("not_following_back")}
             >
-              Seguís y no te devuelven ({notFollowingBack.length})
+              <span className="sm:hidden">No te devuelven ({notFollowingBack.length})</span>
+              <span className="hidden sm:inline">
+                Seguís y no te devuelven ({notFollowingBack.length})
+              </span>
             </TabButton>
             <TabButton active={tab === "fans"} onClick={() => setTab("fans")}>
-              Te siguen y vos no ({fans.length})
+              <span className="sm:hidden">No los seguís ({fans.length})</span>
+              <span className="hidden sm:inline">Te siguen y vos no ({fans.length})</span>
             </TabButton>
           </div>
 

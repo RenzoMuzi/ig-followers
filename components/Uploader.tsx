@@ -28,16 +28,20 @@ export function Uploader({ onFiles, loading }: Props) {
         setDragOver(false);
         handleFiles(e.dataTransfer.files);
       }}
-      className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
+      className={`rounded-xl border-2 border-dashed p-6 text-center transition-colors sm:p-8 ${
         dragOver ? "border-pink-500 bg-pink-500/10" : "border-neutral-700 bg-neutral-900/40"
       }`}
     >
-      <p className="mb-4 text-neutral-300">
+      <p className="mb-3 text-neutral-300">
         Arrastrá acá los archivos{" "}
         <span className="font-mono text-pink-400">following.json</span> y{" "}
-        <span className="font-mono text-pink-400">followers_1.json</span> que te dio Instagram
-        (están dentro del ZIP, en{" "}
-        <span className="font-mono text-neutral-400">connections/followers_and_following/</span>).
+        <span className="font-mono text-pink-400">followers_1.json</span> que te dio Instagram.
+      </p>
+      <p className="mb-4 text-xs text-neutral-500">
+        Dentro del ZIP, los encontrás en:
+        <code className="mt-1 block break-all rounded-md bg-neutral-900/60 px-2 py-1 font-mono text-pink-400/80">
+          connections/followers_and_following/
+        </code>
       </p>
       <input
         ref={inputRef}

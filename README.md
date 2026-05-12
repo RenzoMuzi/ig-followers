@@ -32,7 +32,9 @@ Podés verificarlo vos mismo abriendo la pestaña Network del DevTools mientras 
 
 ### 1. Pedile a Instagram tus datos
 
-Desde la app de Instagram o desde [instagram.com](https://www.instagram.com):
+**Atajo (recomendado):** andá directo a [accountscenter.instagram.com/info_and_permissions/dyi](https://accountscenter.instagram.com/info_and_permissions/dyi/) con tu cuenta logueada y saltá al paso 2.
+
+**O paso a paso desde Instagram:**
 
 1. **Configuración → Centro de cuentas → Tu información y permisos → Descargar tu información**
 2. Elegí tu cuenta.
