@@ -1,5 +1,3 @@
-import JSZip from "jszip";
-
 export type IgUser = {
   username: string;
   href: string;
@@ -96,29 +94,15 @@ export async function parseFiles(files: File[]): Promise<ParsedExport> {
 
   for (const file of files) {
     const name = file.name.toLowerCase();
-    if (name.endsWith(".zip")) {
-      const zip = await JSZip.loadAsync(file);
-      for (const entryName of Object.keys(zip.files)) {
-        const entry = zip.files[entryName];
-        if (entry.dir) continue;
-        const lower = entryName.toLowerCase();
-        if (!lower.endsWith(".json")) continue;
-        // dentro del ZIP solo nos interesan los archivos relevantes
-        if (!lower.includes("following") && !lower.includes("followers")) continue;
-        const text = await entry.async("string");
-        try {
-          pending.push({ name: lower, json: JSON.parse(text) });
-        } catch {
-          warnings.push(`No pude leer ${entryName} (JSON inválido).`);
-        }
-      }
-    } else if (name.endsWith(".json")) {
-      const text = await file.text();
-      try {
-        pending.push({ name, json: JSON.parse(text) });
-      } catch {
-        warnings.push(`No pude leer ${file.name} (JSON inválido).`);
-      }
+    if (!name.endsWith(".json")) {
+      warnings.push(`Ignoré ${file.name}: solo acepto archivos .json.`);
+      continue;
+    }
+    const text = await file.text();
+    try {
+      pending.push({ name, json: JSON.parse(text) });
+    } catch {
+      warnings.push(`No pude leer ${file.name} (JSON inválido).`);
     }
   }
 

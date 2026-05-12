@@ -6,15 +6,16 @@ import type { IgUser } from "@/lib/parser";
 type Props = {
   users: IgUser[];
   emptyLabel: string;
+  hidden: Set<string>;
+  onHiddenChange: (next: Set<string>) => void;
 };
 
 const BULK_CONFIRM_THRESHOLD = 10;
 const BULK_HARD_CAP = 50;
 const OPEN_DELAY_MS = 90;
 
-export function UserList({ users, emptyLabel }: Props) {
+export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
   const [query, setQuery] = useState("");
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkNote, setBulkNote] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
@@ -56,16 +57,14 @@ export function UserList({ users, emptyLabel }: Props) {
   }
 
   function markDone(username: string) {
-    setHidden((prev) => {
-      const next = new Set(prev);
-      next.add(username);
-      return next;
-    });
+    const next = new Set(hidden);
+    next.add(username);
+    onHiddenChange(next);
     setSelected((prev) => {
       if (!prev.has(username)) return prev;
-      const next = new Set(prev);
-      next.delete(username);
-      return next;
+      const nextSel = new Set(prev);
+      nextSel.delete(username);
+      return nextSel;
     });
   }
 
@@ -106,11 +105,9 @@ export function UserList({ users, emptyLabel }: Props) {
 
     // Auto-ocultar los que sí abrieron (el usuario ya los está procesando manualmente)
     if (opened.length > 0) {
-      setHidden((prev) => {
-        const next = new Set(prev);
-        for (const u of opened) next.add(u);
-        return next;
-      });
+      const nextHidden = new Set(hidden);
+      for (const u of opened) nextHidden.add(u);
+      onHiddenChange(nextHidden);
       setSelected((prev) => {
         const next = new Set(prev);
         for (const u of opened) next.delete(u);
@@ -151,7 +148,7 @@ export function UserList({ users, emptyLabel }: Props) {
         </span>
         {hidden.size > 0 && (
           <button
-            onClick={() => setHidden(new Set())}
+            onClick={() => onHiddenChange(new Set())}
             className="rounded-lg border border-neutral-700 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
           >
             Restaurar ocultos ({hidden.size})

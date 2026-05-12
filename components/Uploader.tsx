@@ -33,15 +33,17 @@ export function Uploader({ onFiles, loading }: Props) {
       }`}
     >
       <p className="mb-4 text-neutral-300">
-        Arrastrá acá el <span className="font-semibold text-white">.zip</span> que te dio Instagram,
-        o los archivos <span className="font-mono text-pink-400">following.json</span> y{" "}
-        <span className="font-mono text-pink-400">followers_1.json</span>.
+        Arrastrá acá los archivos{" "}
+        <span className="font-mono text-pink-400">following.json</span> y{" "}
+        <span className="font-mono text-pink-400">followers_1.json</span> que te dio Instagram
+        (están dentro del ZIP, en{" "}
+        <span className="font-mono text-neutral-400">connections/followers_and_following/</span>).
       </p>
       <input
         ref={inputRef}
         type="file"
         multiple
-        accept=".json,.zip,application/json,application/zip"
+        accept=".json,application/json"
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
