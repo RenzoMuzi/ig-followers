@@ -11,6 +11,8 @@ import {
 } from "@/lib/parser";
 import { clearState, loadState, saveState, type Tab } from "@/lib/storage";
 
+const GITHUB_URL = "https://github.com/RenzoMuzi/ig-followers";
+
 export default function Home() {
   const [parsed, setParsed] = useState<ParsedExport | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -105,9 +107,9 @@ export default function Home() {
             Descubrí quién no te sigue de vuelta usando la exportación de datos de Instagram.
           </p>
         </div>
-        {parsed && (
-          <div className="flex shrink-0 items-center gap-2">
-            {showUpload ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {parsed &&
+            (showUpload ? (
               <button
                 onClick={() => setWantsUpload(false)}
                 className="rounded-lg border border-neutral-700 px-3 py-1.5 text-sm text-neutral-200 hover:border-pink-500 hover:text-pink-400"
@@ -122,9 +124,9 @@ export default function Home() {
               >
                 Subir otros archivos
               </button>
-            )}
-          </div>
-        )}
+            ))}
+          <GitHubButton />
+        </div>
       </header>
 
       {showUpload && (
@@ -159,6 +161,21 @@ export default function Home() {
           </details>
 
           <Uploader onFiles={handleFiles} loading={loading} />
+
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-3 rounded-xl border border-emerald-900/50 bg-emerald-950/20 p-4 text-sm text-neutral-300 transition-colors hover:border-emerald-700/70 hover:bg-emerald-950/30"
+          >
+            <GitHubMark className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
+            <span>
+              <span className="font-medium text-white">100% open source.</span> Revisá el código en
+              GitHub para comprobar que la app no toca, guarda ni envía tus datos a ningún lado —
+              todo corre en tu navegador.{" "}
+              <span className="text-emerald-300 underline">github.com/RenzoMuzi/ig-followers →</span>
+            </span>
+          </a>
 
           {error && (
             <div className="rounded-lg border border-red-900/50 bg-red-950/30 p-4 text-sm text-red-300">
@@ -318,5 +335,37 @@ function TabButton({
     >
       {children}
     </button>
+  );
+}
+
+function GitHubButton() {
+  return (
+    <a
+      href={GITHUB_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 rounded-lg border border-neutral-700 px-3 py-1.5 text-sm text-neutral-200 transition-colors hover:border-pink-500 hover:text-pink-400"
+      title="Mirá el código — todo open source"
+    >
+      <GitHubMark className="h-4 w-4" />
+      <span>Ver código</span>
+    </a>
+  );
+}
+
+function GitHubMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-1.97c-3.2.69-3.87-1.54-3.87-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.18.92-.26 1.9-.39 2.88-.39.98 0 1.96.13 2.88.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.67.79.56C20.22 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"
+      />
+    </svg>
   );
 }
