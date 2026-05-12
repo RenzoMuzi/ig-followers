@@ -10,8 +10,7 @@ type Props = {
   onHiddenChange: (next: Set<string>) => void;
 };
 
-const BULK_CONFIRM_THRESHOLD = 10;
-const BULK_HARD_CAP = 50;
+const BULK_HARD_CAP = 10;
 const OPEN_DELAY_MS = 90;
 
 export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
@@ -68,26 +67,19 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
     });
   }
 
-  async function openSelectedInTabs() {
+  async function openInTabs() {
     setBulkNote(null);
-    const targets = filtered.filter((u) => selected.has(u.username));
-    if (targets.length === 0) return;
 
-    let toOpen = targets;
-    if (targets.length > BULK_HARD_CAP) {
-      const ok = confirm(
-        `Tenés ${targets.length} seleccionadas pero el tope por tanda es ${BULK_HARD_CAP}. ` +
-          `¿Abro las primeras ${BULK_HARD_CAP} ahora?`
-      );
-      if (!ok) return;
-      toOpen = targets.slice(0, BULK_HARD_CAP);
-    } else if (targets.length > BULK_CONFIRM_THRESHOLD) {
-      const ok = confirm(
-        `Voy a abrir ${targets.length} pestañas. ` +
-          "Si el navegador bloquea popups, autorizá popups para localhost y reintentá. ¿Sigo?"
-      );
-      if (!ok) return;
-    }
+    // Si hay tildadas, procesa la selección. Si no, pagina por la lista visible.
+    const fromSelection = selected.size > 0;
+    const source = fromSelection
+      ? filtered.filter((u) => selected.has(u.username))
+      : filtered;
+
+    if (source.length === 0) return;
+
+    const toOpen = source.slice(0, BULK_HARD_CAP);
+    const remaining = Math.max(0, source.length - BULK_HARD_CAP);
 
     setOpening(true);
     let blocked = 0;
@@ -95,15 +87,12 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
 
     for (const u of toOpen) {
       const win = window.open(u.href, "_blank", "noopener,noreferrer");
-      if (win) {
-        opened.push(u.username);
-      } else {
-        blocked++;
-      }
+      if (win) opened.push(u.username);
+      else blocked++;
       await sleep(OPEN_DELAY_MS);
     }
 
-    // Auto-ocultar los que sí abrieron (el usuario ya los está procesando manualmente)
+    // Auto-ocultar los abiertos (el usuario ya los está procesando manualmente)
     if (opened.length > 0) {
       const nextHidden = new Set(hidden);
       for (const u of opened) nextHidden.add(u);
@@ -117,10 +106,15 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
 
     if (blocked > 0) {
       setBulkNote(
-        `El navegador bloqueó ${blocked} pestaña(s). Autorizá popups para este sitio y reintentá con los restantes.`
+        `⚠ El navegador bloqueó ${blocked} pestaña(s). Autorizá popups para este sitio y reintentá.`
       );
-    } else {
-      setBulkNote(null);
+    } else if (remaining > 0) {
+      const where = fromSelection ? "tildada(s)" : "visible(s)";
+      setBulkNote(
+        `✓ Abrí ${opened.length}. Quedan ${remaining} ${where} — click el botón otra vez para la próxima tanda.`
+      );
+    } else if (opened.length > 0) {
+      setBulkNote(`✓ Abrí ${opened.length}. Ya procesaste todas.`);
     }
     setOpening(false);
   }
@@ -186,16 +180,30 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
           )}
         </div>
         <button
-          onClick={openSelectedInTabs}
-          disabled={selected.size === 0 || opening}
+          onClick={openInTabs}
+          disabled={(selected.size === 0 && filtered.length === 0) || opening}
+          title={`Máx ${BULK_HARD_CAP} por tanda — abrir muchas pestañas puede trabar el navegador`}
           className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-3 py-2 text-xs font-medium text-white shadow shadow-pink-500/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:ml-auto sm:py-1.5"
         >
-          {opening ? "Abriendo..." : `Abrir ${selected.size || ""} en pestañas`}
+          {opening
+            ? "Abriendo..."
+            : selected.size > 0
+            ? `Abrir ${Math.min(selected.size, BULK_HARD_CAP)} (de ${selected.size} tildadas)`
+            : `Abrir próximas ${Math.min(filtered.length, BULK_HARD_CAP)} visibles`}
         </button>
+        <p className="basis-full text-[11px] text-neutral-500 sm:basis-auto sm:text-right">
+          Máx {BULK_HARD_CAP} por tanda
+        </p>
       </div>
 
       {bulkNote && (
-        <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 p-3 text-sm text-amber-200">
+        <div
+          className={`rounded-lg border p-3 text-sm ${
+            bulkNote.startsWith("✓")
+              ? "border-emerald-900/60 bg-emerald-950/30 text-emerald-200"
+              : "border-amber-900/50 bg-amber-950/30 text-amber-200"
+          }`}
+        >
           {bulkNote}
         </div>
       )}
