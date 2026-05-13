@@ -23,6 +23,9 @@ function usernameFromHref(href: string | undefined): string | null {
   }
 }
 
+// Instagram usernames: hasta 30 chars, [A-Za-z0-9._]. Defensa contra JSON manipulados.
+const USERNAME_RE = /^[A-Za-z0-9._]{1,30}$/;
+
 function entryToUser(e: StringListEntry): IgUser | null {
   const item = e.string_list_data?.[0];
   if (!item) return null;
@@ -32,7 +35,7 @@ function entryToUser(e: StringListEntry): IgUser | null {
     (item.value && item.value.trim()) ||
     (e.title && e.title.trim()) ||
     usernameFromHref(item.href);
-  if (!username) return null;
+  if (!username || !USERNAME_RE.test(username)) return null;
   return {
     username,
     href: `https://www.instagram.com/${username}`,

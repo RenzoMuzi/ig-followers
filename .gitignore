@@ -7,3 +7,4 @@ connections
 .claude
 .env*
 !.env.example
+*.tsbuildinfo
