@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { IgUser } from "@/lib/parser";
 
 type Props = {
@@ -18,13 +18,27 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkNote, setBulkNote] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [sortByRecent, setSortByRecent] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return users
+    const list = users
       .filter((u) => !hidden.has(u.username))
       .filter((u) => (q ? u.username.toLowerCase().includes(q) : true));
-  }, [users, query, hidden]);
+    if (sortByRecent) {
+      return [...list].sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
+    }
+    return list;
+  }, [users, query, hidden, sortByRecent]);
 
   const visibleUsernames = useMemo(() => filtered.map((u) => u.username), [filtered]);
   const allVisibleSelected =
@@ -140,6 +154,16 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
         <span className="text-xs text-neutral-400 sm:text-sm">
           {filtered.length} de {users.length}
         </span>
+        <button
+          onClick={() => setSortByRecent((v) => !v)}
+          className={`rounded-lg border px-3 py-1 text-xs ${
+            sortByRecent
+              ? "border-pink-500 text-pink-400"
+              : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+          }`}
+        >
+          {sortByRecent ? "✓ Más recientes" : "Ordenar por más recientes"}
+        </button>
         {hidden.size > 0 && (
           <button
             onClick={() => onHiddenChange(new Set())}
@@ -150,6 +174,7 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
         )}
       </div>
 
+      {!isMobile && (
       <div className="flex flex-col gap-2 rounded-xl border border-neutral-800 bg-neutral-900/40 p-3 sm:flex-row sm:flex-wrap sm:items-center">
         <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-300">
           <input
@@ -195,8 +220,9 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
           Máx {BULK_HARD_CAP} por tanda
         </p>
       </div>
+      )}
 
-      {bulkNote && (
+      {!isMobile && bulkNote && (
         <div
           className={`rounded-lg border p-3 text-sm ${
             bulkNote.startsWith("✓")
@@ -219,13 +245,15 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
               }`}
             >
               <div className="flex min-w-0 flex-1 items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => toggleOne(u.username)}
-                  className="h-5 w-5 shrink-0 accent-pink-500 sm:h-4 sm:w-4"
-                  aria-label={`Seleccionar ${u.username}`}
-                />
+                {!isMobile && (
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleOne(u.username)}
+                    className="h-5 w-5 shrink-0 accent-pink-500 sm:h-4 sm:w-4"
+                    aria-label={`Seleccionar ${u.username}`}
+                  />
+                )}
                 <a
                   href={u.href}
                   target="_blank"
@@ -266,6 +294,14 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
                 >
                   Abrir y marcar
                 </a>
+                <button
+                  type="button"
+                  onClick={() => markDone(u.username)}
+                  className="flex-1 rounded-lg border border-neutral-700 px-3 py-1.5 text-center text-sm text-neutral-300 hover:border-red-500 hover:text-red-400 sm:flex-none"
+                  title="Saca esta cuenta de la lista sin abrir Instagram"
+                >
+                  Quitar de la lista
+                </button>
               </div>
             </li>
           );
