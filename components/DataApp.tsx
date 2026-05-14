@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Uploader } from "@/components/Uploader";
 import { UserList } from "@/components/UserList";
 import { Stat } from "@/components/Stat";
@@ -28,19 +28,23 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const lastSavedAtRef = useRef<number | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
+  // Hidratación desde localStorage: tiene que correr en un effect (no en el
+  // initializer del useState) para no provocar mismatch de hidratación con el SSR.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const stored = loadState();
     if (stored) {
       setParsed(stored.parsed);
       setHidden(new Set(stored.hidden));
       setTab(stored.tab);
-      lastSavedAtRef.current = stored.savedAt;
+      setLastSavedAt(stored.savedAt);
     }
     setHydrated(true);
   }, []);
 
+  // Persiste el estado y refleja en la UI el resultado del guardado.
   useEffect(() => {
     if (!hydrated) return;
     if (!parsed) return;
@@ -51,9 +55,10 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
       );
     } else {
       setSaveError(null);
-      lastSavedAtRef.current = Date.now();
+      setLastSavedAt(Date.now());
     }
   }, [hydrated, parsed, hidden, tab]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function handleFiles(files: File[]) {
     setLoading(true);
@@ -233,9 +238,9 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
             <p className="text-xs text-neutral-500">
-              {lastSavedAtRef.current
+              {lastSavedAt
                 ? `Guardado automáticamente · última actualización ${new Date(
-                    lastSavedAtRef.current
+                    lastSavedAt
                   ).toLocaleString()}`
                 : "Guardado automáticamente en este navegador"}
             </p>
