@@ -33,21 +33,19 @@ export function Uploader({ onFiles, loading }: Props) {
       }`}
     >
       <p className="mb-3 text-neutral-300">
-        Arrastrá acá los archivos{" "}
+        Arrastrá acá el <span className="font-mono text-pink-400">.zip</span> que te dio
+        Instagram, o los archivos{" "}
         <span className="font-mono text-pink-400">following.json</span> y{" "}
-        <span className="font-mono text-pink-400">followers_1.json</span> que te dio Instagram.
+        <span className="font-mono text-pink-400">followers_1.json</span> sueltos.
       </p>
       <p className="mb-4 text-xs text-neutral-500">
-        Dentro del ZIP, los encontrás en:
-        <code className="mt-1 block break-all rounded-md bg-neutral-900/60 px-2 py-1 font-mono text-pink-400/80">
-          connections/followers_and_following/
-        </code>
+        Del ZIP solo se leen los JSON de seguidores/seguidos, en tu navegador.
       </p>
       <input
         ref={inputRef}
         type="file"
         multiple
-        accept=".json,application/json"
+        accept=".json,application/json,.zip,application/zip,application/x-zip-compressed"
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />

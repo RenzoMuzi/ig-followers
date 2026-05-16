@@ -37,16 +37,17 @@ export function HowToDownload() {
         </li>
         <li>Solicitá la descarga. Te llega por mail en unos minutos.</li>
         <li>
-          Descargá el ZIP y <span className="font-semibold">extraelo</span>. Adentro, los
-          archivos están en:
+          Descargá el ZIP y arrastralo directamente acá abajo. Todo se procesa local en
+          tu navegador y solo se leen los JSON de seguidores/seguidos que están en:
           <code className="mt-1 block break-all rounded-md bg-neutral-900/60 px-2.5 py-1.5 font-mono text-xs text-pink-400">
             connections/followers_and_following/
           </code>
         </li>
         <li>
-          Arrastrá <span className="font-mono text-pink-400">following.json</span> y{" "}
-          <span className="font-mono text-pink-400">followers_1.json</span> acá abajo. Todo
-          se procesa local.
+          También podés extraer el ZIP y subir{" "}
+          <span className="font-mono text-pink-400">following.json</span> y{" "}
+          <span className="font-mono text-pink-400">followers_1.json</span> sueltos si
+          preferís.
         </li>
       </ol>
     </details>

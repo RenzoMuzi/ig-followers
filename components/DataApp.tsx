@@ -67,7 +67,7 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
       const result = await parseFiles(files);
       if (result.following.length === 0 && result.followers.length === 0) {
         setError(
-          "No encontré datos válidos. Asegurate de subir following.json y followers_1.json."
+          "No encontré datos válidos. Subí el .zip de Instagram, o following.json y followers_1.json sueltos."
         );
       } else {
         setParsed(result);
