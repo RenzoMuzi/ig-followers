@@ -1,7 +1,11 @@
+"use client";
+
+import { useTranslation } from "react-i18next";
 import { GITHUB_URL } from "@/lib/constants";
 import { GitHubMark } from "@/components/icons";
 
 export function OpenSourceBanner() {
+  const { t } = useTranslation();
   return (
     <a
       href={GITHUB_URL}
@@ -11,10 +15,9 @@ export function OpenSourceBanner() {
     >
       <GitHubMark className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
       <span>
-        <span className="font-medium text-white">100% open source.</span> Revisá el código en
-        GitHub para comprobar que la app no toca, guarda ni envía tus datos a ningún lado —
-        todo corre en tu navegador.{" "}
-        <span className="text-emerald-300 underline">github.com/RenzoMuzi/ig-followers →</span>
+        <span className="font-medium text-white">{t("openSource.headline")}</span>{" "}
+        {t("openSource.body")}{" "}
+        <span className="text-emerald-300 underline">{t("openSource.linkLabel")}</span>
       </span>
     </a>
   );

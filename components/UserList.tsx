@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { IgUser } from "@/lib/parser";
 
 type Props = {
@@ -14,6 +15,7 @@ const BULK_HARD_CAP = 10;
 const OPEN_DELAY_MS = 90;
 
 export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
+  const { t, i18n } = useTranslation();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkNote, setBulkNote] = useState<string | null>(null);
@@ -119,16 +121,14 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
     }
 
     if (blocked > 0) {
-      setBulkNote(
-        `⚠ El navegador bloqueó ${blocked} pestaña(s). Autorizá popups para este sitio y reintentá.`
-      );
+      setBulkNote(t("userList.bulkBlocked", { count: blocked }));
     } else if (remaining > 0) {
-      const where = fromSelection ? "tildada(s)" : "visible(s)";
-      setBulkNote(
-        `✓ Abrí ${opened.length}. Quedan ${remaining} ${where} — click el botón otra vez para la próxima tanda.`
-      );
+      const key = fromSelection
+        ? "userList.bulkRemainingSelected"
+        : "userList.bulkRemainingVisible";
+      setBulkNote(t(key, { opened: opened.length, remaining }));
     } else if (opened.length > 0) {
-      setBulkNote(`✓ Abrí ${opened.length}. Ya procesaste todas.`);
+      setBulkNote(t("userList.bulkDone", { count: opened.length }));
     }
     setOpening(false);
   }
@@ -148,11 +148,11 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar usuario..."
+          placeholder={t("userList.searchPlaceholder")}
           className="min-w-0 flex-1 basis-full rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm text-white placeholder-neutral-500 outline-none focus:border-pink-500 sm:basis-auto"
         />
         <span className="text-xs text-neutral-400 sm:text-sm">
-          {filtered.length} de {users.length}
+          {t("userList.countOfTotal", { filtered: filtered.length, total: users.length })}
         </span>
         <button
           onClick={() => setSortByRecent((v) => !v)}
@@ -162,14 +162,16 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
               : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
           }`}
         >
-          {sortByRecent ? "✓ Más recientes" : "Ordenar por más recientes"}
+          {sortByRecent
+            ? t("userList.sortByRecentActive")
+            : t("userList.sortByRecent")}
         </button>
         {hidden.size > 0 && (
           <button
             onClick={() => onHiddenChange(new Set())}
             className="ml-auto rounded-lg border border-neutral-700 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-800 sm:ml-0"
           >
-            Restaurar ocultos ({hidden.size})
+            {t("userList.restoreHidden", { count: hidden.size })}
           </button>
         )}
       </div>
@@ -184,40 +186,47 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
             className="h-5 w-5 accent-pink-500 sm:h-4 sm:w-4"
           />
           <span className="sm:hidden">
-            {allVisibleSelected ? "Deseleccionar todos" : "Seleccionar todos"}
+            {allVisibleSelected
+              ? t("userList.deselectAllShort")
+              : t("userList.selectAllShort")}
           </span>
           <span className="hidden sm:inline">
-            {allVisibleSelected ? "Deseleccionar visibles" : "Seleccionar todos los visibles"}
+            {allVisibleSelected
+              ? t("userList.deselectAllLong")
+              : t("userList.selectAllLong")}
           </span>
         </label>
         <div className="flex items-center gap-2 text-xs text-neutral-300">
           <span className="hidden text-neutral-500 sm:inline">·</span>
-          <span>
-            {selected.size} seleccionada{selected.size === 1 ? "" : "s"}
-          </span>
+          <span>{t("userList.selectedCount", { count: selected.size })}</span>
           {selected.size > 0 && (
             <button
               onClick={clearSelection}
               className="text-neutral-400 underline hover:text-white"
             >
-              limpiar
+              {t("userList.clearSelection")}
             </button>
           )}
         </div>
         <button
           onClick={openInTabs}
           disabled={(selected.size === 0 && filtered.length === 0) || opening}
-          title={`Máx ${BULK_HARD_CAP} por tanda — abrir muchas pestañas puede trabar el navegador`}
+          title={t("userList.openTabsTitle", { count: BULK_HARD_CAP })}
           className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-3 py-2 text-xs font-medium text-white shadow shadow-pink-500/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:ml-auto sm:py-1.5"
         >
           {opening
-            ? "Abriendo..."
+            ? t("userList.openTabsOpening")
             : selected.size > 0
-            ? `Abrir ${Math.min(selected.size, BULK_HARD_CAP)} (de ${selected.size} tildadas)`
-            : `Abrir próximas ${Math.min(filtered.length, BULK_HARD_CAP)} visibles`}
+            ? t("userList.openTabsSelected", {
+                shown: Math.min(selected.size, BULK_HARD_CAP),
+                total: selected.size,
+              })
+            : t("userList.openTabsVisible", {
+                count: Math.min(filtered.length, BULK_HARD_CAP),
+              })}
         </button>
         <p className="basis-full text-[11px] text-neutral-500 sm:basis-auto sm:text-right">
-          Máx {BULK_HARD_CAP} por tanda
+          {t("userList.maxPerBatch", { count: BULK_HARD_CAP })}
         </p>
       </div>
       )}
@@ -251,7 +260,7 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
                     checked={isSelected}
                     onChange={() => toggleOne(u.username)}
                     className="h-5 w-5 shrink-0 accent-pink-500 sm:h-4 sm:w-4"
-                    aria-label={`Seleccionar ${u.username}`}
+                    aria-label={t("userList.selectAria", { username: u.username })}
                   />
                 )}
                 <a
@@ -269,38 +278,42 @@ export function UserList({ users, emptyLabel, hidden, onHiddenChange }: Props) {
                     </div>
                     {u.timestamp && (
                       <div className="truncate text-xs text-neutral-500">
-                        Seguís desde {new Date(u.timestamp * 1000).toLocaleDateString()}
+                        {t("userList.followingSince", {
+                          date: new Date(u.timestamp * 1000).toLocaleDateString(
+                            i18n.resolvedLanguage
+                          ),
+                        })}
                       </div>
                     )}
                   </div>
                 </a>
               </div>
-              <div className="flex items-center gap-2 pl-8 sm:pl-0">
+              <div className="flex items-stretch gap-2 pl-8 sm:items-center sm:pl-0">
                 <a
                   href={u.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 rounded-lg border border-neutral-700 px-3 py-1.5 text-center text-sm text-neutral-200 hover:border-pink-500 hover:text-pink-400 sm:flex-none"
+                  className="flex flex-1 items-center justify-center rounded-lg border border-neutral-700 px-3 py-1.5 text-center text-sm text-neutral-200 hover:border-pink-500 hover:text-pink-400 sm:flex-none"
                 >
-                  Ver perfil
+                  {t("userList.viewProfile")}
                 </a>
                 <a
                   href={u.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => markDone(u.username)}
-                  className="flex-1 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-3 py-1.5 text-center text-sm font-medium text-white hover:opacity-90 sm:flex-none"
-                  title="Abre el perfil en Instagram para que dejes de seguirlo manualmente"
+                  className="flex flex-1 items-center justify-center rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-3 py-1.5 text-center text-sm font-medium text-white hover:opacity-90 sm:flex-none"
+                  title={t("userList.openAndMarkTitle")}
                 >
-                  Abrir y marcar
+                  {t("userList.openAndMark")}
                 </a>
                 <button
                   type="button"
                   onClick={() => markDone(u.username)}
-                  className="flex-1 rounded-lg border border-neutral-700 px-3 py-1.5 text-center text-sm text-neutral-300 hover:border-red-500 hover:text-red-400 sm:flex-none"
-                  title="Saca esta cuenta de la lista sin abrir Instagram"
+                  className="flex flex-1 items-center justify-center rounded-lg border border-neutral-700 px-3 py-1.5 text-center text-sm text-neutral-300 hover:border-red-500 hover:text-red-400 sm:flex-none"
+                  title={t("userList.removeFromListTitle")}
                 >
-                  Quitar de la lista
+                  {t("userList.removeFromList")}
                 </button>
               </div>
             </li>

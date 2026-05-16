@@ -133,12 +133,28 @@ function kindFromName(name: string): DetectedKind {
   return null;
 }
 
+// Una warning estructurada: el parser no conoce los textos finales, solo emite
+// claves i18n + parámetros. La UI traduce.
+export type ParserWarning = {
+  key: string;
+  params?: Record<string, string | number>;
+};
+
 export type ParsedExport = {
   following: IgUser[];
   followers: IgUser[];
   pending: IgUser[];
-  warnings: string[];
+  warnings: ParserWarning[];
 };
+
+// Sentinel para llevar { key, params } a través de `throw`. La idea: que
+// extractJsonsFromZip pueda abortar con un mensaje localizable y que parseFiles
+// lo capture sin parsear strings.
+class TranslatableError extends Error {
+  constructor(public i18nKey: string, public i18nParams?: Record<string, string | number>) {
+    super(i18nKey);
+  }
+}
 
 // Límites defensivos para evitar zip bombs y archivos abusivos. Estos están
 // dimensionados con margen amplio sobre exportaciones reales de Instagram
@@ -155,7 +171,7 @@ const TARGET_ZIP_ENTRY_RE =
 // validaciones contra zip bombs, path traversal y entries inesperados.
 async function extractJsonsFromZip(
   file: File,
-  warnings: string[]
+  warnings: ParserWarning[]
 ): Promise<Array<{ name: string; text: string }>> {
   const { default: JSZip } = await import("jszip");
   const buf = await file.arrayBuffer();
@@ -163,9 +179,10 @@ async function extractJsonsFromZip(
 
   const entries = Object.values(zip.files);
   if (entries.length > MAX_ZIP_ENTRIES) {
-    throw new Error(
-      `El ZIP tiene demasiados archivos (${entries.length}). Por seguridad solo proceso hasta ${MAX_ZIP_ENTRIES}.`
-    );
+    throw new TranslatableError("userList.warningTooManyEntries", {
+      count: entries.length,
+      max: MAX_ZIP_ENTRIES,
+    });
   }
 
   const out: Array<{ name: string; text: string }> = [];
@@ -178,7 +195,7 @@ async function extractJsonsFromZip(
     // y no escribimos al disco, descartamos nombres con `..` o rutas absolutas.
     const rawName = entry.name;
     if (rawName.includes("..") || rawName.startsWith("/") || /^[A-Za-z]:/.test(rawName)) {
-      warnings.push(`Ignoré una entry con ruta sospechosa: ${rawName}`);
+      warnings.push({ key: "userList.warningSuspiciousPath", params: { name: rawName } });
       continue;
     }
     if (!TARGET_ZIP_ENTRY_RE.test(rawName)) continue;
@@ -186,16 +203,19 @@ async function extractJsonsFromZip(
     matched++;
     const bytes = await entry.async("uint8array");
     if (bytes.byteLength > MAX_JSON_BYTES) {
-      warnings.push(
-        `Ignoré ${rawName}: pesa ${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB descomprimido (máx ${MAX_JSON_BYTES / 1024 / 1024} MB).`
-      );
+      warnings.push({
+        key: "userList.warningEntryTooLarge",
+        params: {
+          name: rawName,
+          mb: (bytes.byteLength / 1024 / 1024).toFixed(1),
+          maxMb: MAX_JSON_BYTES / 1024 / 1024,
+        },
+      });
       continue;
     }
     totalBytes += bytes.byteLength;
     if (totalBytes > MAX_TOTAL_DECOMPRESSED_BYTES) {
-      throw new Error(
-        "El contenido descomprimido del ZIP supera el límite de seguridad. ¿Es realmente una exportación de Instagram?"
-      );
+      throw new TranslatableError("userList.warningTotalTooLarge");
     }
     const text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
     // Usamos solo el basename del entry; el resto de la pipeline ya se maneja por nombre.
@@ -204,9 +224,7 @@ async function extractJsonsFromZip(
   }
 
   if (matched === 0) {
-    warnings.push(
-      `No encontré followers/following dentro del ZIP. Asegurate de descargar "Seguidores y seguidos" en formato JSON.`
-    );
+    warnings.push({ key: "userList.warningNoFollowersInZip" });
   }
   return out;
 }
@@ -215,7 +233,7 @@ export async function parseFiles(files: File[]): Promise<ParsedExport> {
   let following: IgUser[] = [];
   let followers: IgUser[] = [];
   let pending: IgUser[] = [];
-  const warnings: string[] = [];
+  const warnings: ParserWarning[] = [];
 
   type ParsedJson = { name: string; json: unknown };
   const parsedJsons: ParsedJson[] = [];
@@ -226,9 +244,10 @@ export async function parseFiles(files: File[]): Promise<ParsedExport> {
 
   for (const file of files) {
     if (file.size > MAX_INPUT_FILE_BYTES) {
-      warnings.push(
-        `Ignoré ${file.name}: pesa más de ${MAX_INPUT_FILE_BYTES / 1024 / 1024} MB.`
-      );
+      warnings.push({
+        key: "userList.warningTooLarge",
+        params: { name: file.name, maxMb: MAX_INPUT_FILE_BYTES / 1024 / 1024 },
+      });
       continue;
     }
     const name = file.name.toLowerCase();
@@ -237,14 +256,22 @@ export async function parseFiles(files: File[]): Promise<ParsedExport> {
         const extracted = await extractJsonsFromZip(file, warnings);
         rawTexts.push(...extracted);
       } catch (e) {
-        warnings.push(
-          `No pude leer ${file.name}: ${e instanceof Error ? e.message : "ZIP inválido"}.`
-        );
+        if (e instanceof TranslatableError) {
+          warnings.push({ key: e.i18nKey, params: e.i18nParams });
+        } else {
+          warnings.push({
+            key: "userList.warningZipInvalid",
+            params: {
+              name: file.name,
+              message: e instanceof Error ? e.message : "",
+            },
+          });
+        }
       }
       continue;
     }
     if (!name.endsWith(".json")) {
-      warnings.push(`Ignoré ${file.name}: solo acepto .json o .zip.`);
+      warnings.push({ key: "userList.warningOnlyJson", params: { name: file.name } });
       continue;
     }
     const text = await file.text();
@@ -255,7 +282,7 @@ export async function parseFiles(files: File[]): Promise<ParsedExport> {
     try {
       parsedJsons.push({ name: name.toLowerCase(), json: JSON.parse(text) });
     } catch {
-      warnings.push(`No pude leer ${name} (JSON inválido).`);
+      warnings.push({ key: "userList.warningInvalidJson", params: { name } });
     }
   }
 
@@ -272,7 +299,7 @@ export async function parseFiles(files: File[]): Promise<ParsedExport> {
     if (resolvedKind === "following") following = following.concat(users);
     else if (resolvedKind === "followers") followers = followers.concat(users);
     else if (resolvedKind === "pending") pending = pending.concat(users);
-    else warnings.push(`No pude identificar ${name}.`);
+    else warnings.push({ key: "userList.warningIgnoredFile", params: { name } });
   }
 
   return {

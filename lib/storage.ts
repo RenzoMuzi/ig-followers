@@ -28,6 +28,15 @@ function isValidStoredState(data: unknown): data is StoredState {
   return true;
 }
 
+function migrateWarnings(arr: unknown[]): unknown[] {
+  // Antes guardábamos warnings como string[]; ahora son { key, params? }. Si
+  // detectamos el formato viejo, las descartamos: son efímeras y no vale la
+  // pena traducirlas retroactivamente.
+  return arr.filter(
+    (w) => w && typeof w === "object" && typeof (w as { key: unknown }).key === "string"
+  );
+}
+
 export function loadState(): StoredState | null {
   if (typeof window === "undefined") return null;
   try {
@@ -37,9 +46,10 @@ export function loadState(): StoredState | null {
     if (!isValidStoredState(data)) return null;
     // Migración suave: estados guardados antes de la feature de pending no traen
     // ese campo. Lo rellenamos vacío para que el resto del código no rompa.
-    if (!Array.isArray((data.parsed as Record<string, unknown>).pending)) {
-      (data.parsed as { pending: unknown[] }).pending = [];
-    }
+    const p = data.parsed as Record<string, unknown>;
+    if (!Array.isArray(p.pending)) p.pending = [];
+    // Warnings cambiaron de string[] a ParserWarning[]; descartamos las viejas.
+    p.warnings = migrateWarnings(p.warnings as unknown[]);
     return data;
   } catch {
     return null;

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { I18nProvider } from "@/components/I18nProvider";
 import "./globals.css";
 
 const TITLE = "IG Non-Followers — descubrí quién no te sigue de vuelta";
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body>
-        {children}
+        <I18nProvider>{children}</I18nProvider>
         <Analytics />
       </body>
     </html>

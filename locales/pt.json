@@ -1,0 +1,135 @@
+{
+  "language": {
+    "label": "Idioma",
+    "es": "Español",
+    "en": "English",
+    "pt": "Português"
+  },
+  "header": {
+    "title": "IG Non-Followers",
+    "subtitle": "Descubra quem não te segue de volta usando a exportação de dados do Instagram.",
+    "viewCode": "Ver código",
+    "viewCodeTitle": "Veja o código — tudo open source",
+    "backToList": "← Voltar à lista",
+    "uploadOthers": "Enviar outros arquivos",
+    "uploadOthersTitle": "Mantém seu progresso salvo"
+  },
+  "uploader": {
+    "description": "Arraste aqui o <0>.zip</0> que o Instagram te enviou, ou os arquivos <1>following.json</1>, <2>followers_1.json</2> e <3>pending_follow_requests.json</3> separados.",
+    "zipNote": "Do ZIP só são lidos os JSONs de seguidores, seguidos e solicitações pendentes, no seu navegador.",
+    "selectButton": "Selecionar arquivos",
+    "processing": "Processando...",
+    "localNote": "Tudo é processado localmente no seu navegador — nada é enviado para nenhum servidor."
+  },
+  "howToDownload": {
+    "summary": "Como baixo meus dados do Instagram?",
+    "shortcutLabel": "Atalho",
+    "shortcutDescription": "Vá direto à Central de Contas com sua conta logada:",
+    "shortcutNote": "E pule para o passo 2 abaixo.",
+    "stepByStep": "Ou passo a passo pelo Instagram:",
+    "step1": "Instagram → Configurações → Central de Contas → Suas informações e permissões → Baixar suas informações.",
+    "step2": "Escolha só sua conta → em \"Tipo de informação\" marque <0>Seguidores e seguidos</0>.",
+    "step3": "Formato: <0>JSON</0> · Período: <1>Sempre</1>.",
+    "step4": "Solicite o download. Chega por email em poucos minutos.",
+    "step5": "Baixe o ZIP e arraste direto aqui embaixo. Tudo é processado localmente no seu navegador, e só os JSONs de seguidores/seguidos são lidos a partir de:",
+    "step6": "Você também pode extrair o ZIP e enviar <0>following.json</0>, <1>followers_1.json</1> e <2>pending_follow_requests.json</2> separados se preferir."
+  },
+  "openSource": {
+    "headline": "100% open source.",
+    "body": "Revise o código no GitHub para confirmar que o app não toca, salva nem envia seus dados a lugar nenhum — tudo roda no seu navegador.",
+    "linkLabel": "github.com/RenzoMuzi/ig-followers →"
+  },
+  "stats": {
+    "youFollow": "Você segue",
+    "yourFollowers": "Seguidores",
+    "notFollowingBack": "Não te seguem de volta",
+    "pendingSent": "Solicitações pendentes",
+    "fans": "Você não os segue"
+  },
+  "warnings": {
+    "missingFollowing": "⚠ Não encontrei nenhum <0>following.json</0>. Envie também esse arquivo para ver quem não te segue de volta.",
+    "missingFollowers": "⚠ Não encontrei nenhum <0>followers_1.json</0>. Envie também esse arquivo.",
+    "generic": "⚠ {{message}}",
+    "saveError": "⚠ {{message}}"
+  },
+  "errors": {
+    "noValidData": "Nenhum dado válido encontrado. Envie o .zip do Instagram, ou following.json e followers_1.json separados.",
+    "unknown": "Erro desconhecido ao ler os arquivos",
+    "saveStorage": "Não consegui salvar o estado neste navegador (pode ser limite de armazenamento).",
+    "title": "Algo deu errado",
+    "body": "Ocorreu um erro inesperado no app. Se acontecer de novo, você pode <0>reportar no GitHub</0>.",
+    "retry": "Tentar de novo"
+  },
+  "notFound": {
+    "title": "404 — Não encontrado",
+    "body": "Esta página não existe.",
+    "back": "Voltar ao início"
+  },
+  "tabs": {
+    "notFollowingBackShort": "Não seguem de volta ({{count}})",
+    "notFollowingBackLong": "Você segue e não te seguem ({{count}})",
+    "pendingShort": "Pendentes ({{count}})",
+    "pendingLong": "Solicitações pendentes ({{count}})",
+    "fansShort": "Você não segue ({{count}})",
+    "fansLong": "Te seguem e você não ({{count}})"
+  },
+  "lists": {
+    "emptyMissingFollowing": "Falta following.json para calcular esta lista.",
+    "emptyAllFollowBack": "Todos que você segue te seguem de volta!",
+    "emptyMissingFollowers": "Falta followers_1.json para calcular esta lista.",
+    "emptyAllFollowed": "Você segue todos que te seguem.",
+    "emptyNoPending": "Você não tem solicitações de seguimento pendentes.",
+    "savedAuto": "Salvo automaticamente neste navegador",
+    "savedAutoAt": "Salvo automaticamente · última atualização {{date}}",
+    "clearAll": "Apagar tudo salvo",
+    "confirmClear": "Isso apaga os dados salvos (listas e marcações de ocultos). Confirma?",
+    "uploadNote": "Se você enviar arquivos novos as listas vão ser substituídas, mas as contas marcadas como ocultas são mantidas. Use \"Apagar tudo salvo\" para começar do zero."
+  },
+  "userList": {
+    "searchPlaceholder": "Buscar usuário...",
+    "countOfTotal": "{{filtered}} de {{total}}",
+    "sortByRecent": "Ordenar por mais recentes",
+    "sortByRecentActive": "✓ Mais recentes",
+    "restoreHidden": "Restaurar ocultos ({{count}})",
+    "deselectAllShort": "Desmarcar todos",
+    "selectAllShort": "Selecionar todos",
+    "deselectAllLong": "Desmarcar visíveis",
+    "selectAllLong": "Selecionar todos os visíveis",
+    "selectedCount_one": "{{count}} selecionada",
+    "selectedCount_other": "{{count}} selecionadas",
+    "clearSelection": "limpar",
+    "openTabsOpening": "Abrindo...",
+    "openTabsSelected": "Abrir {{shown}} (de {{total}} marcadas)",
+    "openTabsVisible": "Abrir próximas {{count}} visíveis",
+    "maxPerBatch": "Máx {{count}} por lote",
+    "openTabsTitle": "Máx {{count}} por lote — abrir muitas abas pode travar o navegador",
+    "bulkBlocked": "⚠ O navegador bloqueou {{count}} aba(s). Permita popups para este site e tente de novo.",
+    "bulkRemainingSelected": "✓ Abri {{opened}}. Restam {{remaining}} marcada(s) — clique de novo para o próximo lote.",
+    "bulkRemainingVisible": "✓ Abri {{opened}}. Restam {{remaining}} visível(is) — clique de novo para o próximo lote.",
+    "bulkDone": "✓ Abri {{count}}. Tudo processado.",
+    "selectAria": "Selecionar {{username}}",
+    "followingSince": "Seguindo desde {{date}}",
+    "viewProfile": "Ver perfil",
+    "openAndMark": "Abrir e marcar",
+    "openAndMarkTitle": "Abre o perfil no Instagram para você deixar de seguir manualmente",
+    "removeFromList": "Tirar da lista",
+    "removeFromListTitle": "Tira esta conta da lista sem abrir o Instagram",
+    "warningIgnoredFile": "Não identifiquei {{name}}.",
+    "warningInvalidJson": "Não consegui ler {{name}} (JSON inválido).",
+    "warningOnlyJson": "Ignorei {{name}}: só aceito .json ou .zip.",
+    "warningTooLarge": "Ignorei {{name}}: maior que {{maxMb}} MB.",
+    "warningSuspiciousPath": "Ignorei uma entrada com caminho suspeito: {{name}}",
+    "warningEntryTooLarge": "Ignorei {{name}}: {{mb}} MB descompactado (máx {{maxMb}} MB).",
+    "warningNoFollowersInZip": "Não encontrei followers/following dentro do ZIP. Garante baixar \"Seguidores e seguidos\" no formato JSON.",
+    "warningTooManyEntries": "O ZIP tem arquivos demais ({{count}}). Por segurança só processo até {{max}}.",
+    "warningTotalTooLarge": "O conteúdo descompactado do ZIP excede o limite de segurança. É mesmo uma exportação do Instagram?",
+    "warningZipInvalid": "Não consegui ler {{name}}: {{message}}.",
+    "warningZipDefaultMsg": "ZIP inválido"
+  },
+  "footer": {
+    "didItHelp": "O app foi útil?",
+    "followInstagram": "Me siga no Instagram",
+    "buyCoffee": "Me paga um café",
+    "mercadoPagoNote": "Aceito cartões de toda LatAm via MercadoPago"
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Uploader } from "@/components/Uploader";
 import { UserList } from "@/components/UserList";
 import { Stat } from "@/components/Stat";
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function DataApp({ howToDownload, openSourceBanner }: Props) {
+  const { t, i18n } = useTranslation();
   const [parsed, setParsed] = useState<ParsedExport | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<Tab>("not_following_back");
@@ -44,20 +46,17 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
     setHydrated(true);
   }, []);
 
-  // Persiste el estado y refleja en la UI el resultado del guardado.
   useEffect(() => {
     if (!hydrated) return;
     if (!parsed) return;
     const ok = saveState({ parsed, hidden: Array.from(hidden), tab });
     if (!ok) {
-      setSaveError(
-        "No pude guardar el estado en este navegador (puede ser por cuota de almacenamiento)."
-      );
+      setSaveError(t("errors.saveStorage"));
     } else {
       setSaveError(null);
       setLastSavedAt(Date.now());
     }
-  }, [hydrated, parsed, hidden, tab]);
+  }, [hydrated, parsed, hidden, tab, t]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   async function handleFiles(files: File[]) {
@@ -65,25 +64,36 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
     setError(null);
     try {
       const result = await parseFiles(files);
-      if (result.following.length === 0 && result.followers.length === 0) {
-        setError(
-          "No encontré datos válidos. Subí el .zip de Instagram, o following.json y followers_1.json sueltos."
-        );
+      if (
+        result.following.length === 0 &&
+        result.followers.length === 0 &&
+        result.pending.length === 0
+      ) {
+        setError(t("errors.noValidData"));
       } else {
-        setParsed(result);
+        // Si ya había datos previos y el nuevo upload solo trae algunas listas,
+        // hacemos merge para no perder las que ya tenía cargadas (caso típico:
+        // subir solo pending_follow_requests.json sin re-subir los otros dos).
+        setParsed((prev) => {
+          if (!prev) return result;
+          return {
+            following: result.following.length > 0 ? result.following : prev.following,
+            followers: result.followers.length > 0 ? result.followers : prev.followers,
+            pending: result.pending.length > 0 ? result.pending : prev.pending,
+            warnings: result.warnings,
+          };
+        });
         setWantsUpload(false);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido al leer los archivos");
+      setError(e instanceof Error ? e.message : t("errors.unknown"));
     } finally {
       setLoading(false);
     }
   }
 
   function handleClearAll() {
-    const ok = confirm(
-      "Esto borra los datos guardados (listas y marcas de ocultos). ¿Confirmás?"
-    );
+    const ok = confirm(t("lists.confirmClear"));
     if (!ok) return;
     clearState();
     setParsed(null);
@@ -119,16 +129,16 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
         onClick={() => setWantsUpload(false)}
         className="rounded-lg border border-neutral-700 px-3 py-1.5 text-sm text-neutral-200 hover:border-pink-500 hover:text-pink-400"
       >
-        ← Volver a la lista
+        {t("header.backToList")}
       </button>
     ) : (
       <button
         type="button"
         onClick={() => setWantsUpload(true)}
         className="rounded-lg border border-neutral-700 px-3 py-1.5 text-sm text-neutral-200 hover:border-pink-500 hover:text-pink-400"
-        title="Mantiene tu progreso guardado"
+        title={t("header.uploadOthersTitle")}
       >
-        Subir otros archivos
+        {t("header.uploadOthers")}
       </button>
     )
   ) : null;
@@ -152,11 +162,7 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
           )}
 
           {parsed && (
-            <p className="text-xs text-neutral-500">
-              Si subís nuevos archivos se van a reemplazar las listas, pero las cuentas que
-              marcaste como ocultas se mantienen. Usá &quot;Borrar todo guardado&quot; para
-              empezar de cero.
-            </p>
+            <p className="text-xs text-neutral-500">{t("lists.uploadNote")}</p>
           )}
         </section>
       )}
@@ -164,33 +170,45 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
       {parsed && !showUpload && (
         <section className="space-y-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <Stat label="Seguís" value={parsed.following.length} warn={missingFollowing} />
-            <Stat label="Te siguen" value={parsed.followers.length} warn={missingFollowers} />
             <Stat
-              label="No te devuelven el follow"
+              label={t("stats.youFollow")}
+              value={parsed.following.length}
+              warn={missingFollowing}
+            />
+            <Stat
+              label={t("stats.yourFollowers")}
+              value={parsed.followers.length}
+              warn={missingFollowers}
+            />
+            <Stat
+              label={t("stats.notFollowingBack")}
               value={notFollowingBack.length}
               highlight
             />
-            <Stat label="Solicitudes pendientes" value={pendingSent.length} />
-            <Stat label="Vos no los seguís" value={fans.length} />
+            <Stat label={t("stats.pendingSent")} value={pendingSent.length} />
+            <Stat label={t("stats.fans")} value={fans.length} />
           </div>
 
           {(missingFollowing || missingFollowers || parsed.warnings.length > 0) && (
             <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 p-4 text-sm text-amber-200">
               {missingFollowing && (
                 <p>
-                  ⚠ No encontré ningún <span className="font-mono">following.json</span>. Subí
-                  también ese archivo para ver quién no te sigue de vuelta.
+                  <Trans
+                    i18nKey="warnings.missingFollowing"
+                    components={[<span key="0" className="font-mono" />]}
+                  />
                 </p>
               )}
               {missingFollowers && (
                 <p>
-                  ⚠ No encontré ningún <span className="font-mono">followers_1.json</span>.
-                  Subí también ese archivo.
+                  <Trans
+                    i18nKey="warnings.missingFollowers"
+                    components={[<span key="0" className="font-mono" />]}
+                  />
                 </p>
               )}
-              {parsed.warnings.map((w) => (
-                <p key={w}>⚠ {w}</p>
+              {parsed.warnings.map((w, i) => (
+                <p key={`${w.key}-${i}`}>⚠ {t(w.key, w.params)}</p>
               ))}
             </div>
           )}
@@ -209,20 +227,28 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
               active={tab === "not_following_back"}
               onClick={() => setTab("not_following_back")}
             >
-              <span className="sm:hidden">No te devuelven ({notFollowingBack.length})</span>
+              <span className="sm:hidden">
+                {t("tabs.notFollowingBackShort", { count: notFollowingBack.length })}
+              </span>
               <span className="hidden sm:inline">
-                Seguís y no te devuelven ({notFollowingBack.length})
+                {t("tabs.notFollowingBackLong", { count: notFollowingBack.length })}
               </span>
             </TabButton>
             <TabButton active={tab === "pending"} onClick={() => setTab("pending")}>
-              <span className="sm:hidden">Pendientes ({pendingSent.length})</span>
+              <span className="sm:hidden">
+                {t("tabs.pendingShort", { count: pendingSent.length })}
+              </span>
               <span className="hidden sm:inline">
-                Solicitudes pendientes ({pendingSent.length})
+                {t("tabs.pendingLong", { count: pendingSent.length })}
               </span>
             </TabButton>
             <TabButton active={tab === "fans"} onClick={() => setTab("fans")}>
-              <span className="sm:hidden">No los seguís ({fans.length})</span>
-              <span className="hidden sm:inline">Te siguen y vos no ({fans.length})</span>
+              <span className="sm:hidden">
+                {t("tabs.fansShort", { count: fans.length })}
+              </span>
+              <span className="hidden sm:inline">
+                {t("tabs.fansLong", { count: fans.length })}
+              </span>
             </TabButton>
           </div>
 
@@ -233,8 +259,8 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
               onHiddenChange={setHidden}
               emptyLabel={
                 missingFollowing
-                  ? "Falta following.json para calcular esta lista."
-                  : "¡Todos los que seguís te siguen de vuelta!"
+                  ? t("lists.emptyMissingFollowing")
+                  : t("lists.emptyAllFollowBack")
               }
             />
           )}
@@ -245,8 +271,8 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
               onHiddenChange={setHidden}
               emptyLabel={
                 missingFollowers
-                  ? "Falta followers_1.json para calcular esta lista."
-                  : "Seguís a todos los que te siguen."
+                  ? t("lists.emptyMissingFollowers")
+                  : t("lists.emptyAllFollowed")
               }
             />
           )}
@@ -255,24 +281,24 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
               users={pendingSent}
               hidden={hidden}
               onHiddenChange={setHidden}
-              emptyLabel="No tenés solicitudes de seguimiento pendientes."
+              emptyLabel={t("lists.emptyNoPending")}
             />
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
             <p className="text-xs text-neutral-500">
               {lastSavedAt
-                ? `Guardado automáticamente · última actualización ${new Date(
-                    lastSavedAt
-                  ).toLocaleString()}`
-                : "Guardado automáticamente en este navegador"}
+                ? t("lists.savedAutoAt", {
+                    date: new Date(lastSavedAt).toLocaleString(i18n.resolvedLanguage),
+                  })
+                : t("lists.savedAuto")}
             </p>
             <button
               type="button"
               onClick={handleClearAll}
               className="text-xs text-neutral-500 underline hover:text-red-400"
             >
-              Borrar todo guardado
+              {t("lists.clearAll")}
             </button>
           </div>
         </section>
