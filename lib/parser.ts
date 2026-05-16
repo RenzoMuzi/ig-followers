@@ -55,14 +55,18 @@ type LabelValuesEntry = {
 function labelValuesEntryToUser(e: LabelValuesEntry): IgUser | null {
   const lv = e.label_values;
   if (!Array.isArray(lv)) return null;
+  // No dependemos del nombre del label (cambia según el idioma de la cuenta de IG:
+  // "Username" en inglés, "Nombre de usuario" en español, "Nome de usuário" en
+  // portugués, etc). Tomamos el último value que matchee la regex de username:
+  // el resto del array son URL (vacía o con `://`) o Nombre (con espacios/acentos),
+  // que no pasan la regex. En el formato de IG el Username viene al final, así
+  // que si por casualidad un nombre simple pasara la regex, el real igual gana.
   let username: string | undefined;
   for (const pair of lv) {
-    if (pair?.label === "Username" && typeof pair.value === "string") {
-      username = pair.value.trim();
-      break;
-    }
+    const v = typeof pair?.value === "string" ? pair.value.trim() : "";
+    if (v && USERNAME_RE.test(v)) username = v;
   }
-  if (!username || !USERNAME_RE.test(username)) return null;
+  if (!username) return null;
   return {
     username,
     href: `https://www.instagram.com/${username}`,
@@ -164,8 +168,12 @@ const MAX_JSON_BYTES = 50 * 1024 * 1024; // 50 MB descomprimidos por JSON indivi
 const MAX_TOTAL_DECOMPRESSED_BYTES = 200 * 1024 * 1024; // 200 MB totales descomprimidos del zip
 const MAX_ZIP_ENTRIES = 2000; // tope al número de entries antes de mirar nada
 // Solo nos interesan los JSONs de followers/following dentro del zip.
+// El parent puede ser `connections/followers_and_following/` (export clásico)
+// o cualquier otro prefijo en exports nuevos (ej. `your_instagram_activity/...`),
+// por eso solo exigimos que el path termine en `followers_and_following/<basename>.json`.
+// `pending_follow_requests` también puede venir con sufijo `_N` como followers.
 const TARGET_ZIP_ENTRY_RE =
-  /(^|\/)connections\/followers_and_following\/(followers(_\d+)?|following|pending_follow_requests)\.json$/i;
+  /(^|\/)followers_and_following\/(followers(_\d+)?|following|pending_follow_requests(_\d+)?)\.json$/i;
 
 // Extrae solo los JSONs que nos interesan de un zip subido, en memoria, con
 // validaciones contra zip bombs, path traversal y entries inesperados.
@@ -188,6 +196,8 @@ async function extractJsonsFromZip(
   const out: Array<{ name: string; text: string }> = [];
   let totalBytes = 0;
   let matched = 0;
+  const matchedPaths: string[] = [];
+  const skippedJsonPaths: string[] = [];
 
   for (const entry of entries) {
     if (entry.dir) continue;
@@ -198,9 +208,15 @@ async function extractJsonsFromZip(
       warnings.push({ key: "userList.warningSuspiciousPath", params: { name: rawName } });
       continue;
     }
-    if (!TARGET_ZIP_ENTRY_RE.test(rawName)) continue;
+    if (!TARGET_ZIP_ENTRY_RE.test(rawName)) {
+      // Para diagnosticar si IG cambió la estructura, guardamos los `.json` que
+      // no matchearon. Los volcamos a la consola al final si la lista queda corta.
+      if (rawName.toLowerCase().endsWith(".json")) skippedJsonPaths.push(rawName);
+      continue;
+    }
 
     matched++;
+    matchedPaths.push(rawName);
     const bytes = await entry.async("uint8array");
     if (bytes.byteLength > MAX_JSON_BYTES) {
       warnings.push({
@@ -221,6 +237,27 @@ async function extractJsonsFromZip(
     // Usamos solo el basename del entry; el resto de la pipeline ya se maneja por nombre.
     const baseName = rawName.split("/").pop() ?? rawName;
     out.push({ name: baseName, text });
+  }
+
+  // Si no encontramos los 3 archivos típicos (followers, following, pending),
+  // logueamos los .json descartados para que el usuario pueda reportarlo si IG
+  // cambió la estructura del export. No es un dato sensible (solo paths).
+  const foundPending = matchedPaths.some((p) => /pending_follow_requests/i.test(p));
+  const foundFollowing = matchedPaths.some((p) => /\/following(_\d+)?\.json$/i.test(p));
+  const foundFollowers = matchedPaths.some((p) => /\/followers(_\d+)?\.json$/i.test(p));
+  if (!foundPending || !foundFollowing || !foundFollowers) {
+    console.info(
+      "[ig-followers] ZIP scan — matched:",
+      matchedPaths,
+      "missing:",
+      {
+        pending: !foundPending,
+        following: !foundFollowing,
+        followers: !foundFollowers,
+      },
+      "skipped .json paths (first 20):",
+      skippedJsonPaths.slice(0, 20)
+    );
   }
 
   if (matched === 0) {
