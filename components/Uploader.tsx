@@ -35,11 +35,14 @@ export function Uploader({ onFiles, loading }: Props) {
       <p className="mb-3 text-neutral-300">
         Arrastrá acá el <span className="font-mono text-pink-400">.zip</span> que te dio
         Instagram, o los archivos{" "}
-        <span className="font-mono text-pink-400">following.json</span> y{" "}
-        <span className="font-mono text-pink-400">followers_1.json</span> sueltos.
+        <span className="font-mono text-pink-400">following.json</span>,{" "}
+        <span className="font-mono text-pink-400">followers_1.json</span> y{" "}
+        <span className="font-mono text-pink-400">pending_follow_requests.json</span>{" "}
+        sueltos.
       </p>
       <p className="mb-4 text-xs text-neutral-500">
-        Del ZIP solo se leen los JSON de seguidores/seguidos, en tu navegador.
+        Del ZIP solo se leen los JSON de seguidores, seguidos y solicitudes pendientes, en
+        tu navegador.
       </p>
       <input
         ref={inputRef}

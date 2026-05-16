@@ -45,9 +45,10 @@ export function HowToDownload() {
         </li>
         <li>
           También podés extraer el ZIP y subir{" "}
-          <span className="font-mono text-pink-400">following.json</span> y{" "}
-          <span className="font-mono text-pink-400">followers_1.json</span> sueltos si
-          preferís.
+          <span className="font-mono text-pink-400">following.json</span>,{" "}
+          <span className="font-mono text-pink-400">followers_1.json</span> y{" "}
+          <span className="font-mono text-pink-400">pending_follow_requests.json</span>{" "}
+          sueltos si preferís.
         </li>
       </ol>
     </details>

@@ -43,39 +43,91 @@ function entryToUser(e: StringListEntry): IgUser | null {
   };
 }
 
-type DetectedKind = "following" | "followers" | null;
+type DetectedKind = "following" | "followers" | "pending" | null;
+
+// Formato distinto al de followers/following: objetos con `label_values` que
+// contienen pares { label, value }. Lo usan los pending_follow_requests.json.
+type LabelValuesEntry = {
+  timestamp?: number;
+  label_values?: Array<{ label?: string; value?: string }>;
+};
+
+function labelValuesEntryToUser(e: LabelValuesEntry): IgUser | null {
+  const lv = e.label_values;
+  if (!Array.isArray(lv)) return null;
+  let username: string | undefined;
+  for (const pair of lv) {
+    if (pair?.label === "Username" && typeof pair.value === "string") {
+      username = pair.value.trim();
+      break;
+    }
+  }
+  if (!username || !USERNAME_RE.test(username)) return null;
+  return {
+    username,
+    href: `https://www.instagram.com/${username}`,
+    timestamp: e.timestamp,
+  };
+}
 
 /**
  * Detecta si un JSON parseado pertenece a "following" o "followers" mirando
  * su estructura. Si el JSON es un array (ambos archivos vienen como array
  * en exportaciones recientes), devuelve kind=null y se resuelve por nombre.
  */
-function detect(json: unknown): { kind: DetectedKind; entries: StringListEntry[] } {
+type DetectResult =
+  | { kind: DetectedKind; format: "string_list"; entries: StringListEntry[] }
+  | { kind: DetectedKind; format: "label_values"; entries: LabelValuesEntry[] }
+  | { kind: null; format: "unknown"; entries: [] };
+
+function detect(json: unknown): DetectResult {
   if (json && typeof json === "object" && !Array.isArray(json)) {
     const obj = json as Record<string, unknown>;
     if (Array.isArray(obj.relationships_following)) {
-      return { kind: "following", entries: obj.relationships_following as StringListEntry[] };
+      return {
+        kind: "following",
+        format: "string_list",
+        entries: obj.relationships_following as StringListEntry[],
+      };
     }
     if (Array.isArray(obj.relationships_followers)) {
-      return { kind: "followers", entries: obj.relationships_followers as StringListEntry[] };
+      return {
+        kind: "followers",
+        format: "string_list",
+        entries: obj.relationships_followers as StringListEntry[],
+      };
+    }
+    if (Array.isArray(obj.relationships_follow_requests_sent)) {
+      return {
+        kind: "pending",
+        format: "string_list",
+        entries: obj.relationships_follow_requests_sent as StringListEntry[],
+      };
     }
     // formatos viejos: una sola key con la lista adentro
     for (const v of Object.values(obj)) {
       if (Array.isArray(v) && v.length && (v[0] as StringListEntry)?.string_list_data) {
-        return { kind: null, entries: v as StringListEntry[] };
+        return { kind: null, format: "string_list", entries: v as StringListEntry[] };
       }
     }
   }
-  // Array top-level: puede ser cualquiera de los dos en exportaciones nuevas.
+  // Array top-level: puede ser cualquiera de los formatos. Lo desambiguamos por
+  // la forma del primer elemento.
   if (Array.isArray(json)) {
-    return { kind: null, entries: json as StringListEntry[] };
+    const first = json[0] as Record<string, unknown> | undefined;
+    if (first && Array.isArray((first as LabelValuesEntry).label_values)) {
+      return { kind: null, format: "label_values", entries: json as LabelValuesEntry[] };
+    }
+    return { kind: null, format: "string_list", entries: json as StringListEntry[] };
   }
-  return { kind: null, entries: [] };
+  return { kind: null, format: "unknown", entries: [] };
 }
 
 function kindFromName(name: string): DetectedKind {
-  // Importante: chequear "following" antes que "followers" no alcanza porque
-  // ninguno es substring del otro, pero igual lo dejamos explícito.
+  // Pending va primero: contiene "follow_requests" en el nombre y queremos
+  // diferenciarlo claramente de followers/following.
+  if (name.includes("pending_follow_requests")) return "pending";
+  if (name.includes("follow_requests_sent")) return "pending";
   if (name.includes("following")) return "following";
   if (name.includes("followers")) return "followers";
   return null;
@@ -84,6 +136,7 @@ function kindFromName(name: string): DetectedKind {
 export type ParsedExport = {
   following: IgUser[];
   followers: IgUser[];
+  pending: IgUser[];
   warnings: string[];
 };
 
@@ -96,7 +149,7 @@ const MAX_TOTAL_DECOMPRESSED_BYTES = 200 * 1024 * 1024; // 200 MB totales descom
 const MAX_ZIP_ENTRIES = 2000; // tope al número de entries antes de mirar nada
 // Solo nos interesan los JSONs de followers/following dentro del zip.
 const TARGET_ZIP_ENTRY_RE =
-  /(^|\/)connections\/followers_and_following\/(followers(_\d+)?|following)\.json$/i;
+  /(^|\/)connections\/followers_and_following\/(followers(_\d+)?|following|pending_follow_requests)\.json$/i;
 
 // Extrae solo los JSONs que nos interesan de un zip subido, en memoria, con
 // validaciones contra zip bombs, path traversal y entries inesperados.
@@ -161,10 +214,11 @@ async function extractJsonsFromZip(
 export async function parseFiles(files: File[]): Promise<ParsedExport> {
   let following: IgUser[] = [];
   let followers: IgUser[] = [];
+  let pending: IgUser[] = [];
   const warnings: string[] = [];
 
-  type Pending = { name: string; json: unknown };
-  const pending: Pending[] = [];
+  type ParsedJson = { name: string; json: unknown };
+  const parsedJsons: ParsedJson[] = [];
 
   // Paso 1: cada upload puede ser un .json suelto o un .zip que contiene los JSONs.
   // Recolectamos los textos crudos primero para parsearlos uniformemente abajo.
@@ -199,26 +253,32 @@ export async function parseFiles(files: File[]): Promise<ParsedExport> {
 
   for (const { name, text } of rawTexts) {
     try {
-      pending.push({ name: name.toLowerCase(), json: JSON.parse(text) });
+      parsedJsons.push({ name: name.toLowerCase(), json: JSON.parse(text) });
     } catch {
       warnings.push(`No pude leer ${name} (JSON inválido).`);
     }
   }
 
-  for (const { name, json } of pending) {
-    const { kind, entries } = detect(json);
-    // Prioridad: estructura > nombre. Si la estructura es ambigua (array top-level),
-    // usamos el nombre.
-    const resolvedKind: DetectedKind = kind ?? kindFromName(name);
-    const users = entries.map(entryToUser).filter((u): u is IgUser => u !== null);
+  for (const { name, json } of parsedJsons) {
+    const detected = detect(json);
+    // Prioridad: estructura > nombre. Si la estructura es ambigua, usamos el nombre.
+    const resolvedKind: DetectedKind = detected.kind ?? kindFromName(name);
+    const users =
+      detected.format === "label_values"
+        ? detected.entries
+            .map(labelValuesEntryToUser)
+            .filter((u): u is IgUser => u !== null)
+        : detected.entries.map(entryToUser).filter((u): u is IgUser => u !== null);
     if (resolvedKind === "following") following = following.concat(users);
     else if (resolvedKind === "followers") followers = followers.concat(users);
-    else warnings.push(`No pude identificar ${name} como followers o following.`);
+    else if (resolvedKind === "pending") pending = pending.concat(users);
+    else warnings.push(`No pude identificar ${name}.`);
   }
 
   return {
     following: dedupe(following),
     followers: dedupe(followers),
+    pending: dedupe(pending),
     warnings,
   };
 }

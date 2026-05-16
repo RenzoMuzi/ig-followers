@@ -99,6 +99,13 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
     [parsed]
   );
   const fans = useMemo(() => (parsed ? computeFansYouDontFollow(parsed) : []), [parsed]);
+  const pendingSent = useMemo(
+    () =>
+      parsed
+        ? [...parsed.pending].sort((a, b) => a.username.localeCompare(b.username))
+        : [],
+    [parsed]
+  );
 
   const missingFollowing = parsed?.following.length === 0;
   const missingFollowers = parsed?.followers.length === 0;
@@ -156,7 +163,7 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
 
       {parsed && !showUpload && (
         <section className="space-y-6">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <Stat label="Seguís" value={parsed.following.length} warn={missingFollowing} />
             <Stat label="Te siguen" value={parsed.followers.length} warn={missingFollowers} />
             <Stat
@@ -164,6 +171,7 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
               value={notFollowingBack.length}
               highlight
             />
+            <Stat label="Solicitudes pendientes" value={pendingSent.length} />
             <Stat label="Vos no los seguís" value={fans.length} />
           </div>
 
@@ -206,13 +214,19 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
                 Seguís y no te devuelven ({notFollowingBack.length})
               </span>
             </TabButton>
+            <TabButton active={tab === "pending"} onClick={() => setTab("pending")}>
+              <span className="sm:hidden">Pendientes ({pendingSent.length})</span>
+              <span className="hidden sm:inline">
+                Solicitudes pendientes ({pendingSent.length})
+              </span>
+            </TabButton>
             <TabButton active={tab === "fans"} onClick={() => setTab("fans")}>
               <span className="sm:hidden">No los seguís ({fans.length})</span>
               <span className="hidden sm:inline">Te siguen y vos no ({fans.length})</span>
             </TabButton>
           </div>
 
-          {tab === "not_following_back" ? (
+          {tab === "not_following_back" && (
             <UserList
               users={notFollowingBack}
               hidden={hidden}
@@ -223,7 +237,8 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
                   : "¡Todos los que seguís te siguen de vuelta!"
               }
             />
-          ) : (
+          )}
+          {tab === "fans" && (
             <UserList
               users={fans}
               hidden={hidden}
@@ -233,6 +248,14 @@ export function DataApp({ howToDownload, openSourceBanner }: Props) {
                   ? "Falta followers_1.json para calcular esta lista."
                   : "Seguís a todos los que te siguen."
               }
+            />
+          )}
+          {tab === "pending" && (
+            <UserList
+              users={pendingSent}
+              hidden={hidden}
+              onHiddenChange={setHidden}
+              emptyLabel="No tenés solicitudes de seguimiento pendientes."
             />
           )}
 
